@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi Tracker FR0010411884</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d6efd">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.2rem;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        .isin {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 20px;
+        }
+        .price {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #0d6efd;
+            margin-bottom: 15px;
+        }
+        .update-time {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:active {
+            background-color: #0b5ed7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Tracker CAC 40</h1>
+        <div class="isin">FR0010411884</div>
+        <div class="price" id="price-display">Chargement...</div>
+        <div class="update-time" id="time-display">DernièreMaj : --:--:--</div>
+        <button onclick="fetchTrackerData()">Rafraîchir</button>
+    </div>
+
+    <script>
+        // Fonction pour récupérer la valeur (Exemple via une API publique ou simulation)
+        async function fetchTrackerData() {
+            const priceDisplay = document.getElementById('price-display');
+            const timeDisplay = document.getElementById('time-display');
+            
+            priceDisplay.innerText = "Mise à jour...";
+
+            try {
+                // Note : Pour un usage réel en production, utilisez une API financière (Yahoo Finance, Alpha Vantage, etc.)
+                // Ici, on simule ou on interroge un proxy CORS si besoin. 
+                // Exemple d'appel fictif / de simulation réaliste :
+                const response = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/CAC.PA'); // Remplacer par le symbole exact du ticker sur le marché
+                const data = await response.json();
+                const quote = data.chart.result[0].meta.regularMarketPrice;
+                
+                priceDisplay.innerText = quote.toFixed(2) + " €";
+            } catch (error) {
+                // Solution de secours si l'API bloque (CORS) : simulation ou message
+                console.error("Erreur réseau, utilisation d'une valeur simulée ou cache", error);
+                // Simulation pour test immédiat si l'API bloque sans backend :
+                const simulatedPrice = (7500 + Math.random() * 50).toFixed(2);
+                priceDisplay.innerText = simulatedPrice + " € (Simulé)";
+            }
+
+            const now = new Date();
+            timeDisplay.innerText = "Mis à jour à " + now.toLocaleTimeString();
+        }
+
+        // Charger au démarrage
+        fetchTrackerData();
+
+        // Actualisation automatique toutes les 60 secondes
+        setInterval(fetchTrackerData, 60000);
+
+        // Enregistrement du Service Worker pour la PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log("Service Worker enregistré avec succès."))
+                .catch((err) => console.log("Erreur Service Worker : ", err));
+        }
+    </script>
+</body>
+</html>
