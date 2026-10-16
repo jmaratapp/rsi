@@ -195,7 +195,8 @@
             priceDisplay.innerText = "Mise à jour...";
 
             try {
-                const response = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/^FCHI?range=3mo&interval=1d');
+                const targetUrl = encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/^FCHI?range=3mo&interval=1d');
+                const response = await fetch(`https://api.allorigins.win/raw?url=${targetUrl}`);
                 const data = await response.json();
                 
                 const result = data.chart.result[0];
