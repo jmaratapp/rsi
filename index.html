@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi CAC 40 - Indicateurs & Actions</title>
+    <title>Suivi CAC 40 - Temps Réel & Indicateurs</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
     <style>
@@ -28,13 +28,13 @@
             margin-bottom: 15px;
         }
         h1 {
-            font-size: 1.1rem;
-            color: #6c757d;
+            font-size: 1.2rem;
+            color: #212529;
             margin-bottom: 5px;
         }
-        .isin {
+        .subtitle {
             font-size: 0.85rem;
-            color: #adb5bd;
+            color: #6c757d;
             margin-bottom: 15px;
         }
         .price {
@@ -70,7 +70,6 @@
             background-color: #0b5ed7;
         }
         
-        /* Style du tableau */
         .table-container {
             background: white;
             padding: 10px;
@@ -131,8 +130,8 @@
 <body>
 
     <div class="card">
-        <h1>Indice CAC 40 (PX1)</h1>
-        <div class="isin">FR0010411884 / Ref: PX1</div>
+        <h1>Indice CAC 40</h1>
+        <div class="subtitle">Indice Paris (PX1 / ^FCHI)</div>
         <div class="price" id="price-display">Chargement...</div>
         <div class="change" id="change-display">--</div>
         <div class="update-time" id="time-display">Dernière maj : --:--:--</div>
@@ -220,13 +219,12 @@
                 const diff = currentPrice - previousClose;
                 const percentChange = (diff / previousClose) * 100;
 
-                priceDisplay.innerText = currentPrice.toFixed(2) + " €";
+                priceDisplay.innerText = currentPrice.toFixed(2) + " pts";
                 changeDisplay.innerHTML = `<span class="${diff >= 0 ? 'positive' : 'negative'}">
                     ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${percentChange.toFixed(2)}%)
                 </span>`;
 
                 let tableHTML = "";
-                // On extrait les indices des 20 derniers jours, du plus récent au plus ancien (ordre inverse)
                 let totalDays = validData.length;
                 let startIndex = Math.max(0, totalDays - 20);
 
@@ -255,7 +253,6 @@
                         }
                     }
 
-                    // Surligner la première ligne (jour en cours / le plus récent)
                     let rowClass = (globalIndex === totalDays - 1) ? "today-row" : "";
 
                     tableHTML += `
@@ -274,14 +271,13 @@
             } catch (error) {
                 console.error("Erreur de récupération, passage en mode simulé", error);
                 
-                priceDisplay.innerText = "7542.10 €";
+                priceDisplay.innerText = "7542.10 pts";
                 changeDisplay.innerHTML = `<span class="positive">+45.20 (+0.60%)</span>`;
                 
                 let simulatedHTML = "";
                 let basePrice = 7500;
                 let dummyCloses = [];
                 
-                // Préparer un tableau de simulation
                 for(let i=0; i<25; i++) {
                     basePrice += (Math.random() * 20 - 10);
                     dummyCloses.push(basePrice);
