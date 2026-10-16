@@ -271,11 +271,11 @@
             } catch (error) {
                 console.error("Erreur de récupération, passage en mode simulé", error);
                 
-                priceDisplay.innerText = "7542.10 pts";
+                priceDisplay.innerText = "9999.10 pts";
                 changeDisplay.innerHTML = `<span class="positive">+45.20 (+0.60%)</span>`;
                 
                 let simulatedHTML = "";
-                let basePrice = 7500;
+                let basePrice = 9800;
                 let dummyCloses = [];
                 
                 for(let i=0; i<25; i++) {
