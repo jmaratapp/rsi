@@ -70,7 +70,7 @@
             background-color: #0b5ed7;
         }
         
-        /* Style du tableau élargi */
+        /* Style du tableau */
         .table-container {
             background: white;
             padding: 10px;
@@ -122,6 +122,10 @@
             border-radius: 4px;
             font-weight: bold;
         }
+        .today-row {
+            background-color: #e8f4fd;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -136,7 +140,7 @@
     </div>
 
     <div class="table-container">
-        <h2>Historique 20 derniers jours</h2>
+        <h2>Historique & Temps Réel (20 derniers jours)</h2>
         <table>
             <thead>
                 <tr>
@@ -222,12 +226,13 @@
                 </span>`;
 
                 let tableHTML = "";
-                let startIndex = Math.max(0, validData.length - 20);
-                let sliceData = validData.slice(startIndex);
+                // On extrait les indices des 20 derniers jours, du plus récent au plus ancien (ordre inverse)
+                let totalDays = validData.length;
+                let startIndex = Math.max(0, totalDays - 20);
 
-                for (let i = 0; i < sliceData.length; i++) {
-                    let globalIndex = startIndex + i;
-                    let closeVal = sliceData[i].close;
+                for (let globalIndex = totalDays - 1; globalIndex >= startIndex; globalIndex--) {
+                    let closeVal = closes[globalIndex];
+                    let dateStr = validData[globalIndex].date;
                     let rsi = calculateRSI(closes, globalIndex);
                     let mm5 = calculateSMA(closes, 5, globalIndex);
 
@@ -238,7 +243,6 @@
                     let overClass = over ? "badge-true" : "badge-false";
                     let overText = over ? "True" : "False";
 
-                    // Conditions Action
                     let actionText = "-";
                     let actionClass = "";
                     if (rsi !== null && mm5 !== null) {
@@ -251,9 +255,12 @@
                         }
                     }
 
+                    // Surligner la première ligne (jour en cours / le plus récent)
+                    let rowClass = (globalIndex === totalDays - 1) ? "today-row" : "";
+
                     tableHTML += `
-                        <tr>
-                            <td>${sliceData[i].date}</td>
+                        <tr class="${rowClass}">
+                            <td>${dateStr} ${globalIndex === totalDays - 1 ? '(Aujourd\'hui)' : ''}</td>
                             <td><b>${closeVal.toFixed(2)}</b></td>
                             <td>${rsiStr}</td>
                             <td>${mm5Str}</td>
@@ -272,13 +279,23 @@
                 
                 let simulatedHTML = "";
                 let basePrice = 7500;
-                for (let i = 1; i <= 20; i++) {
+                let dummyCloses = [];
+                
+                // Préparer un tableau de simulation
+                for(let i=0; i<25; i++) {
                     basePrice += (Math.random() * 20 - 10);
-                    let over = Math.random() > 0.5;
+                    dummyCloses.push(basePrice);
+                }
+
+                for (let i = 19; i >= 0; i--) {
+                    let gIdx = dummyCloses.length - 1 - (19 - i);
+                    let closeVal = dummyCloses[gIdx];
                     let rsiSim = 30 + Math.random() * 60;
+                    let mm5Sim = closeVal - (Math.random() * 10 - 5);
+                    let over = closeVal > mm5Sim;
+                    
                     let actionText = "-";
                     let actionClass = "";
-
                     if (rsiSim < 33 && !over) {
                         actionText = "UP";
                         actionClass = "action-up";
@@ -287,12 +304,13 @@
                         actionClass = "action-down";
                     }
 
+                    let isToday = (i === 19);
                     simulatedHTML += `
-                        <tr>
-                            <td>J-${21 - i}</td>
-                            <td><b>${basePrice.toFixed(2)}</b></td>
+                        <tr class="${isToday ? 'today-row' : ''}">
+                            <td>${isToday ? 'Aujourd\'hui' : 'J-' + (19 - i)}</td>
+                            <td><b>${closeVal.toFixed(2)}</b></td>
                             <td>${rsiSim.toFixed(1)}</td>
-                            <td>${(basePrice - 5).toFixed(2)}</td>
+                            <td>${mm5Sim.toFixed(2)}</td>
                             <td><span class="${over ? 'badge-true' : 'badge-false'}">${over ? 'True' : 'False'}</span></td>
                             <td><span class="${actionClass}">${actionText}</span></td>
                         </tr>
