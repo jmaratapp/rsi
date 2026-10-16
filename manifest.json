@@ -1,6 +1,6 @@
 {
-  "name": "Suivi rsi",
-  "short_name": "rsi",
+  "name": "Suivi CAC 40",
+  "short_name": "CAC40",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f8f9fa",
