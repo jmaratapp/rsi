@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi rsi - Temps Réel & Indicateurs</title>
+    <title>Suivi CAC 40 - Temps Réel & Indicateurs</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
     <style>
@@ -195,6 +195,7 @@
             priceDisplay.innerText = "Mise à jour...";
 
             try {
+                // Utilisation d'un proxy CORS pour contourner le blocage du navigateur
                 const targetUrl = encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/^FCHI?range=3mo&interval=1d');
                 const response = await fetch(`https://api.allorigins.win/raw?url=${targetUrl}`);
                 const data = await response.json();
@@ -270,50 +271,10 @@
                 tableBody.innerHTML = tableHTML;
 
             } catch (error) {
-                console.error("Erreur de récupération, passage en mode simulé", error);
-                
-                priceDisplay.innerText = "9999.10 pts";
-                changeDisplay.innerHTML = `<span class="positive">+45.20 (+0.60%)</span>`;
-                
-                let simulatedHTML = "";
-                let basePrice = 9800;
-                let dummyCloses = [];
-                
-                for(let i=0; i<25; i++) {
-                    basePrice += (Math.random() * 20 - 10);
-                    dummyCloses.push(basePrice);
-                }
-
-                for (let i = 19; i >= 0; i--) {
-                    let gIdx = dummyCloses.length - 1 - (19 - i);
-                    let closeVal = dummyCloses[gIdx];
-                    let rsiSim = 30 + Math.random() * 60;
-                    let mm5Sim = closeVal - (Math.random() * 10 - 5);
-                    let over = closeVal > mm5Sim;
-                    
-                    let actionText = "-";
-                    let actionClass = "";
-                    if (rsiSim < 33 && !over) {
-                        actionText = "UP";
-                        actionClass = "action-up";
-                    } else if (rsiSim > 82 && over) {
-                        actionText = "DOWN";
-                        actionClass = "action-down";
-                    }
-
-                    let isToday = (i === 19);
-                    simulatedHTML += `
-                        <tr class="${isToday ? 'today-row' : ''}">
-                            <td>${isToday ? 'Aujourd\'hui' : 'J-' + (19 - i)}</td>
-                            <td><b>${closeVal.toFixed(2)}</b></td>
-                            <td>${rsiSim.toFixed(1)}</td>
-                            <td>${mm5Sim.toFixed(2)}</td>
-                            <td><span class="${over ? 'badge-true' : 'badge-false'}">${over ? 'True' : 'False'}</span></td>
-                            <td><span class="${actionClass}">${actionText}</span></td>
-                        </tr>
-                    `;
-                }
-                tableBody.innerHTML = simulatedHTML;
+                console.error("Erreur lors de la récupération des données :", error);
+                priceDisplay.innerText = "Erreur réseau";
+                changeDisplay.innerText = "Impossible de charger les données réelles";
+                tableBody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Erreur de connexion à l'API.</td></tr>`;
             }
 
             const now = new Date();
