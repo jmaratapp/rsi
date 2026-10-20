@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi CAC 40 - Temps Réel & Indicateurs</title>
+    <title>Suivi RSI - Temps Réel & Indicateurs</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
     <style>
@@ -92,7 +92,7 @@
             text-align: center;
         }
         th, td {
-            padding: 6px 4px;
+            padding: 6px 3px;
             border-bottom: 1px solid #dee2e6;
         }
         th {
@@ -130,7 +130,7 @@
 <body>
 
     <div class="card">
-        <h1>Indice CAC 40</h1>
+        <h1>Suivi RSI</h1>
         <div class="subtitle">Indice Paris (PX1 / ^FCHI)</div>
         <div class="price" id="price-display">Chargement...</div>
         <div class="change" id="change-display">--</div>
@@ -145,6 +145,7 @@
                 <tr>
                     <th>Date</th>
                     <th>Cours</th>
+                    <th>Var. %</th>
                     <th>RSI14</th>
                     <th>MM5</th>
                     <th>Over</th>
@@ -152,7 +153,7 @@
                 </tr>
             </thead>
             <tbody id="history-table-body">
-                <tr><td colspan="6" style="text-align: center;">Chargement des données...</td></tr>
+                <tr><td colspan="7" style="text-align: center;">Chargement des données...</td></tr>
             </tbody>
         </table>
     </div>
@@ -190,7 +191,6 @@
             const priceDisplay = document.getElementById('price-display');
             const changeDisplay = document.getElementById('change-display');
             const timeDisplay = document.getElementById('time-display');
-            const tableBody = document.getElementById('history-table-body');
             
             priceDisplay.innerText = "Mise à jour...";
 
@@ -236,6 +236,15 @@
                     let rsi = calculateRSI(closes, globalIndex);
                     let mm5 = calculateSMA(closes, 5, globalIndex);
 
+                    let dayVarStr = "-";
+                    let dayVarClass = "";
+                    if (globalIndex > 0) {
+                        let prevClose = closes[globalIndex - 1];
+                        let dayVar = ((closeVal - prevClose) / prevClose) * 100;
+                        dayVarStr = (dayVar >= 0 ? "+" : "") + dayVar.toFixed(2) + "%";
+                        dayVarClass = dayVar >= 0 ? "positive" : "negative";
+                    }
+
                     let rsiStr = rsi !== null ? rsi.toFixed(1) : "-";
                     let mm5Str = mm5 !== null ? mm5.toFixed(2) : "-";
 
@@ -261,6 +270,7 @@
                         <tr class="${rowClass}">
                             <td>${dateStr} ${globalIndex === totalDays - 1 ? '(Aujourd\'hui)' : ''}</td>
                             <td><b>${closeVal.toFixed(2)}</b></td>
+                            <td><span class="${dayVarClass}">${dayVarStr}</span></td>
                             <td>${rsiStr}</td>
                             <td>${mm5Str}</td>
                             <td><span class="${overClass}">${overText}</span></td>
@@ -268,13 +278,13 @@
                         </tr>
                     `;
                 }
-                tableBody.innerHTML = tableHTML;
+                document.getElementById('history-table-body').innerHTML = tableHTML;
 
             } catch (error) {
                 console.error("Erreur lors de la récupération des données :", error);
                 priceDisplay.innerText = "Erreur réseau";
-                changeDisplay.innerText = "Impossible de charger les données réelles";
-                tableBody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Erreur de connexion à l'API.</td></tr>`;
+                changeDisplay.innerText = "Données hors-ligne / conservées";
+                // Le tableau n'est PAS modifié ni vidé, il garde son contenu précédent
             }
 
             const now = new Date();
