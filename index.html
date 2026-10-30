@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi RSI - CAC 40 (Twelve Data)</title>
+    <title>Suivi RSI - Temps Réel & Indicateurs</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d6efd">
     <style>
@@ -130,8 +130,8 @@
 <body>
 
     <div class="card">
-        <h1>Suivi RSI v3</h1>
-        <div class="subtitle">Indice CAC 40 (Twelve Data)</div>
+        <h1>Suivi RSI</h1>
+        <div class="subtitle">Indice Paris (PX1 / ^FCHI)</div>
         <div class="price" id="price-display">Chargement...</div>
         <div class="change" id="change-display">--</div>
         <div class="update-time" id="time-display">Dernière maj : --:--:--</div>
@@ -139,7 +139,7 @@
     </div>
 
     <div class="table-container">
-        <h2>Historique Clôtures & Temps Réel (20 derniers jours)</h2>
+        <h2>Historique & Temps Réel (20 derniers jours)</h2>
         <table>
             <thead>
                 <tr>
@@ -159,8 +159,6 @@
     </div>
 
     <script>
-        const API_KEY = "58405e8800f14ff3ad4d383851fb1956";
-
         function calculateSMA(data, windowSize, currentIndex) {
             if (currentIndex < windowSize - 1) return null;
             let sum = 0;
@@ -170,40 +168,23 @@
             return sum / windowSize;
         }
 
-        function calculateAllRSI(closes, period = 14) {
-            let rsiValues = new Array(closes.length).fill(null);
-            if (closes.length <= period) return rsiValues;
-
+        function calculateRSI(closes, index) {
+            if (index < 14) return null;
             let gains = 0;
             let losses = 0;
 
-            for (let i = 1; i <= period; i++) {
+            for (let i = index - 13; i <= index; i++) {
                 let change = closes[i] - closes[i - 1];
-                if (change >= 0) gains += change;
+                if (change > 0) gains += change;
                 else losses -= change;
             }
 
-            let avgGain = gains / period;
-            let avgLoss = losses / period;
+            let avgGain = gains / 14;
+            let avgLoss = losses / 14;
 
-            rsiValues[period] = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
-
-            for (let i = period + 1; i < closes.length; i++) {
-                let change = closes[i] - closes[i - 1];
-                let currentGain = change > 0 ? change : 0;
-                let currentLoss = change < 0 ? -change : 0;
-
-                avgGain = ((avgGain * (period - 1)) + currentGain) / period;
-                avgLoss = ((avgLoss * (period - 1)) + currentLoss) / period;
-
-                if (avgLoss === 0) {
-                    rsiValues[i] = 100;
-                } else {
-                    let rs = avgGain / avgLoss;
-                    rsiValues[i] = 100 - (100 / (1 + rs));
-                }
-            }
-            return rsiValues;
+            if (avgLoss === 0) return 100;
+            let rs = avgGain / avgLoss;
+            return 100 - (100 / (1 + rs));
         }
 
         async function fetchTrackerData() {
@@ -212,44 +193,31 @@
             const timeDisplay = document.getElementById('time-display');
             
             priceDisplay.innerText = "Mise à jour...";
-            console.log("1. Début de la récupération des données...");
 
             try {
-                const url = `https://api.twelvedata.com/time_series?symbol=CAC&interval=1day&outputsize=100&apikey=${API_KEY}`;
-                console.log("2. URL appelée :", url);
-
-                const response = await fetch(url);
-                console.log("3. Réponse reçue, statut :", response.status);
-                
-                if (!response.ok) throw new Error("Erreur HTTP " + response.status);
-                
+                // Utilisation d'un proxy CORS pour contourner le blocage du navigateur
+                const targetUrl = encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/^FCHI?range=3mo&interval=1d');
+                const response = await fetch(`https://api.allorigins.win/raw?url=${targetUrl}`);
                 const data = await response.json();
-                console.log("4. Données JSON décodées :", data);
                 
-                if (data.status === "error") {
-                    throw new Error(data.message || "Erreur de l'API Twelve Data");
-                }
-
-                if (!data.values || !Array.isArray(data.values)) {
-                    throw new Error("Format de données invalide reçu de l'API");
-                }
-
-                const rawValues = data.values.reverse();
+                const result = data.chart.result[0];
+                const timestamps = result.timestamp;
+                const quotes = result.indicators.quote[0].close;
                 
-                let validData = rawValues.map(item => {
-                    let parts = item.datetime.split(" ")[0].split("-");
-                    let formattedDate = `${parts[2]}/${parts[1]}`;
-                    return {
-                        date: formattedDate,
-                        close: parseFloat(item.close)
-                    };
-                });
+                let validData = [];
+                for (let i = 0; i < timestamps.length; i++) {
+                    if (quotes[i] !== null) {
+                        validData.push({
+                            date: new Date(timestamps[i] * 1000).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+                            close: quotes[i]
+                        });
+                    }
+                }
 
                 const closes = validData.map(d => d.close);
-                const rsiSeries = calculateAllRSI(closes, 14);
-
                 const currentPrice = closes[closes.length - 1];
                 const previousClose = closes[closes.length - 2];
+                
                 const diff = currentPrice - previousClose;
                 const percentChange = (diff / previousClose) * 100;
 
@@ -265,7 +233,7 @@
                 for (let globalIndex = totalDays - 1; globalIndex >= startIndex; globalIndex--) {
                     let closeVal = closes[globalIndex];
                     let dateStr = validData[globalIndex].date;
-                    let rsi = rsiSeries[globalIndex];
+                    let rsi = calculateRSI(closes, globalIndex);
                     let mm5 = calculateSMA(closes, 5, globalIndex);
 
                     let dayVarStr = "-";
@@ -311,12 +279,12 @@
                     `;
                 }
                 document.getElementById('history-table-body').innerHTML = tableHTML;
-                console.log("5. Affichage mis à jour avec succès.");
 
             } catch (error) {
-                console.error("Erreur attrapée dans le bloc catch :", error);
-                priceDisplay.innerText = "Erreur de chargement";
-                changeDisplay.innerText = error.message;
+                console.error("Erreur lors de la récupération des données :", error);
+                priceDisplay.innerText = "Erreur réseau";
+                changeDisplay.innerText = "Données hors-ligne / conservées";
+                // Le tableau n'est PAS modifié ni vidé, il garde son contenu précédent
             }
 
             const now = new Date();
