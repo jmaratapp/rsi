@@ -214,8 +214,8 @@
             priceDisplay.innerText = "Mise à jour...";
 
             try {
-                // Utilisation de l'intervalle journalier (1day) pour avoir les clôtures et le cours live du jour
-                const url = `https://api.twelvedata.com/time_series?symbol=FCHI&interval=1day&outputsize=100&apikey=${API_KEY}`;
+                // Utilisation du paramètre exchange=Euronext pour cibler correctement le CAC40 (^FCHI)
+                const url = `https://api.twelvedata.com/time_series?symbol=FCHI&exchange=Euronext&interval=1day&outputsize=100&apikey=${API_KEY}`;
                 const response = await fetch(url);
                 
                 if (!response.ok) throw new Error("Erreur HTTP " + response.status);
