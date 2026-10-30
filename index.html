@@ -130,7 +130,7 @@
 <body>
 
     <div class="card">
-        <h1>Suivi RSI v2</h1>
+        <h1>Suivi RSI v3</h1>
         <div class="subtitle">Indice CAC 40 (Twelve Data)</div>
         <div class="price" id="price-display">Chargement...</div>
         <div class="change" id="change-display">--</div>
@@ -212,26 +212,33 @@
             const timeDisplay = document.getElementById('time-display');
             
             priceDisplay.innerText = "Mise à jour...";
+            console.log("1. Début de la récupération des données...");
 
             try {
-                // Utilisation du symbole validé 'CAC' pour Twelve Data
                 const url = `https://api.twelvedata.com/time_series?symbol=CAC&interval=1day&outputsize=100&apikey=${API_KEY}`;
+                console.log("2. URL appelée :", url);
+
                 const response = await fetch(url);
+                console.log("3. Réponse reçue, statut :", response.status);
                 
                 if (!response.ok) throw new Error("Erreur HTTP " + response.status);
                 
                 const data = await response.json();
+                console.log("4. Données JSON décodées :", data);
                 
                 if (data.status === "error") {
                     throw new Error(data.message || "Erreur de l'API Twelve Data");
                 }
 
-                // Inversion pour un ordre chronologique (du plus ancien au plus récent)
+                if (!data.values || !Array.isArray(data.values)) {
+                    throw new Error("Format de données invalide reçu de l'API");
+                }
+
                 const rawValues = data.values.reverse();
                 
                 let validData = rawValues.map(item => {
-                    let parts = item.datetime.split(" ")[0].split("-"); // [Année, Mois, Jour]
-                    let formattedDate = `${parts[2]}/${parts[1]}`; // JJ/MM
+                    let parts = item.datetime.split(" ")[0].split("-");
+                    let formattedDate = `${parts[2]}/${parts[1]}`;
                     return {
                         date: formattedDate,
                         close: parseFloat(item.close)
@@ -266,4 +273,62 @@
                     if (globalIndex > 0) {
                         let prevClose = closes[globalIndex - 1];
                         let dayVar = ((closeVal - prevClose) / prevClose) * 100;
-                        dayVarStr = (dayVar >= 0 ? "+" : "") + dayVar.toFixed(
+                        dayVarStr = (dayVar >= 0 ? "+" : "") + dayVar.toFixed(2) + "%";
+                        dayVarClass = dayVar >= 0 ? "positive" : "negative";
+                    }
+
+                    let rsiStr = rsi !== null ? rsi.toFixed(1) : "-";
+                    let mm5Str = mm5 !== null ? mm5.toFixed(2) : "-";
+
+                    let over = (mm5 !== null) ? (closeVal > mm5) : false;
+                    let overClass = over ? "badge-true" : "badge-false";
+                    let overText = over ? "True" : "False";
+
+                    let actionText = "-";
+                    let actionClass = "";
+                    if (rsi !== null && mm5 !== null) {
+                        if (rsi < 33 && over === false) {
+                            actionText = "UP";
+                            actionClass = "action-up";
+                        } else if (rsi > 82 && over === true) {
+                            actionText = "DOWN";
+                            actionClass = "action-down";
+                        }
+                    }
+
+                    let rowClass = (globalIndex === totalDays - 1) ? "today-row" : "";
+
+                    tableHTML += `
+                        <tr class="${rowClass}">
+                            <td>${dateStr} ${globalIndex === totalDays - 1 ? '(Aujourd\'hui)' : ''}</td>
+                            <td><b>${closeVal.toFixed(2)}</b></td>
+                            <td><span class="${dayVarClass}">${dayVarStr}</span></td>
+                            <td>${rsiStr}</td>
+                            <td>${mm5Str}</td>
+                            <td><span class="${overClass}">${overText}</span></td>
+                            <td><span class="${actionClass}">${actionText}</span></td>
+                        </tr>
+                    `;
+                }
+                document.getElementById('history-table-body').innerHTML = tableHTML;
+                console.log("5. Affichage mis à jour avec succès.");
+
+            } catch (error) {
+                console.error("Erreur attrapée dans le bloc catch :", error);
+                priceDisplay.innerText = "Erreur de chargement";
+                changeDisplay.innerText = error.message;
+            }
+
+            const now = new Date();
+            timeDisplay.innerText = "Dernière maj : " + now.toLocaleTimeString();
+        }
+
+        fetchTrackerData();
+        setInterval(fetchTrackerData, 60000);
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+        }
+    </script>
+</body>
+</html>
